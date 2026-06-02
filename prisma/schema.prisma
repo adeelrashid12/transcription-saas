@@ -1,0 +1,83 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// User Roles
+enum Role {
+  CLIENT
+  TRANSCRIPTIONIST
+  ADMIN
+}
+
+// Order Formatting and Tiers
+enum FormattingTemplate {
+  GENERAL
+  LEGAL
+}
+
+enum ServiceTier {
+  AI_ONLY
+  HUMAN_REVIEWED
+  FULLY_HUMAN
+}
+
+enum JobStatus {
+  QUEUED
+  CLAIMED
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+}
+
+model User {
+  id        String   @id @default(uuid())
+  email     String   @unique
+  name      String?
+  role      Role     @default(CLIENT)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  orders Order[]
+  jobs   Job[]
+}
+
+model Order {
+  id             String             @id @default(uuid())
+  clientId       String
+  client         User               @relation(fields: [clientId], references: [id])
+  durationMin    Int
+  format         FormattingTemplate
+  tier           ServiceTier
+  price          Float
+  isPaid         Boolean            @default(false)
+  stripeSessionId String?
+
+  audioFileUrl   String?
+  transcriptUrl  String?
+
+  createdAt      DateTime           @default(now())
+  updatedAt      DateTime           @updatedAt
+
+  job            Job?
+}
+
+model Job {
+  id               String    @id @default(uuid())
+  orderId          String    @unique
+  order            Order     @relation(fields: [orderId], references: [id])
+  
+  status           JobStatus @default(QUEUED)
+  
+  transcriptionistId String?
+  transcriptionist   User?   @relation(fields: [transcriptionistId], references: [id])
+
+  payoutAmount     Float?
+  
+  createdAt        DateTime  @default(now())
+  updatedAt        DateTime  @updatedAt
+}
