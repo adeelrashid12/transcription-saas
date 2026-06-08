@@ -65,9 +65,8 @@ export default function Home() {
             </label>
             <select value={tier} onChange={(e) => setTier(e.target.value)}>
               <option value="free">Free Trial (First 30 Mins AI)</option>
-              <option value="ai">Automated AI (&gt;95% Accuracy) - Within Minutes</option>
-              <option value="reviewed">Human Reviewed - Two Weeks</option>
-              <option value="manual">Fully Human (99% Accuracy) - Three Weeks</option>
+              <option value="ai">AI Only Transcription ($0.18/min)</option>
+              <option value="manual">Fully Human Transcription ($3.50/min)</option>
             </select>
           </div>
 
@@ -78,7 +77,7 @@ export default function Home() {
           <div className="price-estimate">
             <span>Estimated Total:</span>
             <span className="price-highlight">
-              {tier === "free" ? "$0.00" : tier === "ai" ? "$0.15/min" : tier === "reviewed" ? "$2.50/min" : "$4.00/min"}
+              {tier === "free" ? "$0.00" : tier === "ai" ? "$0.18/min" : "$3.50/min"}
             </span>
           </div>
         </div>

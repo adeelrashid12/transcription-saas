@@ -1,33 +1,172 @@
 "use client";
 
-import { TrendingUp, Users, FileCheck, Settings, LayoutDashboard, Briefcase, UserCircle, CreditCard, Bell, Search, BarChart3, LogOut, CheckCircle, Clock, AlertTriangle, ArrowRight, ShieldCheck, Mail, DollarSign } from 'lucide-react';
-import { useState } from 'react';
+import { TrendingUp, Users, FileCheck, Settings, LayoutDashboard, Briefcase, UserCircle, CreditCard, Bell, Search, BarChart3, LogOut, CheckCircle, Clock, AlertTriangle, ArrowRight, ShieldCheck, Mail, DollarSign, X } from 'lucide-react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
+import { supabase } from '@/lib/supabase';
 
 export default function AdminDashboard() {
   const router = useRouter();
   const [activeTab, setActiveTab] = useState('Dashboard');
 
-  const allJobs = [
-    { id: 'JOB-9825', customer: 'lawfirm@example.com', tier: 'Fully Human', status: 'In Progress', worker: 'Sarah J.', revenue: 150.00, date: 'Oct 24' },
-    { id: 'JOB-9824', customer: 'podcast@media.com', tier: 'AI Instant', status: 'Completed', worker: 'Deepgram API', revenue: 12.50, date: 'Oct 24' },
-    { id: 'JOB-9823', customer: 'smith.legal@law.com', tier: 'Human Reviewed', status: 'Queued', worker: 'Unassigned', revenue: 65.00, date: 'Oct 23' },
-    { id: 'JOB-9822', customer: 'marketing@corp.com', tier: 'AI Instant', status: 'Failed', worker: 'Deepgram API', revenue: 0.00, date: 'Oct 23' },
-    { id: 'JOB-9821', customer: 'dr.jones@clinic.com', tier: 'Fully Human', status: 'Completed', worker: 'Michael T.', revenue: 85.00, date: 'Oct 22' },
-  ];
+  const [allJobs, setAllJobs] = useState<any[]>([]);
+  const [customers, setCustomers] = useState<any[]>([]);
+  const [workers, setWorkers] = useState<any[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [selectedJob, setSelectedJob] = useState<any | null>(null);
+  const [assigningWorkerId, setAssigningWorkerId] = useState('');
+  const [isAssigning, setIsAssigning] = useState(false);
+  
+  const [payoutAmount, setPayoutAmount] = useState('');
+  const [isUpdatingPayout, setIsUpdatingPayout] = useState(false);
+  const [saveSuccess, setSaveSuccess] = useState(false);
+  const [isApproving, setIsApproving] = useState(false);
+  const [approveSuccess, setApproveSuccess] = useState(false);
 
-  const workers = [
-    { name: 'Sarah Jenkins', email: 'sarah.j@gmail.com', status: 'Online', rating: '4.9', earnings: '$3,450' },
-    { name: 'Michael Thomas', email: 'm.thomas@yahoo.com', status: 'Offline', rating: '4.7', earnings: '$1,200' },
-    { name: 'Elena Rodriguez', email: 'elena.r@gmail.com', status: 'In Job', rating: '5.0', earnings: '$4,100' },
-    { name: 'David Smith', email: 'david.s@hotmail.com', status: 'Online', rating: '4.8', earnings: '$850' },
-  ];
+  const [isAddingWorker, setIsAddingWorker] = useState(false);
+  const [newWorker, setNewWorker] = useState({ name: '', email: '' });
+  const [isSubmittingWorker, setIsSubmittingWorker] = useState(false);
 
-  const customers = [
-    { name: 'Davis Law Firm', email: 'admin@davislaw.com', totalSpent: '$4,500', activeJobs: 2 },
-    { name: 'TechMedia Podcast', email: 'hello@techmedia.com', totalSpent: '$850', activeJobs: 0 },
-    { name: 'City Hospital', email: 'records@cityhospital.org', totalSpent: '$12,400', activeJobs: 5 },
-  ];
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const { data: leads } = await supabase.from('leads').select('*').order('created_at', { ascending: false });
+        const { data: orders } = await supabase.from('orders').select('*').order('created_at', { ascending: false });
+        const { data: workersData } = await supabase.from('workers').select('*').order('created_at', { ascending: false });
+        
+        if (leads) setCustomers(leads);
+        if (orders) setAllJobs(orders);
+        if (workersData) setWorkers(workersData);
+      } catch (error) {
+        console.error("Error fetching admin data", error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+    fetchData();
+  }, []);
+
+  const handleAddWorker = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsSubmittingWorker(true);
+    try {
+      const res = await fetch('/api/admin/workers', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(newWorker)
+      });
+      if (res.ok) {
+        const { data: workersData } = await supabase.from('workers').select('*').order('created_at', { ascending: false });
+        if (workersData) setWorkers(workersData);
+        setIsAddingWorker(false);
+        setNewWorker({ name: '', email: '' });
+      } else {
+        alert('Failed to add worker');
+      }
+    } catch (error) {
+      console.error(error);
+    } finally {
+      setIsSubmittingWorker(false);
+    }
+  };
+
+  const handleRemoveWorker = async (workerId: string) => {
+    if (!confirm('Are you sure you want to remove this worker?')) return;
+    try {
+      const res = await fetch('/api/admin/workers', {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ worker_id: workerId })
+      });
+      if (res.ok) {
+        setWorkers(workers.filter(w => w.id !== workerId));
+      } else {
+        alert('Failed to remove worker');
+      }
+    } catch (error) {
+      console.error(error);
+    }
+  };
+
+  const handleAssignJob = async () => {
+    if (!assigningWorkerId || !selectedJob) return;
+    setIsAssigning(true);
+    try {
+      const res = await fetch('/api/admin/jobs/assign', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ job_id: selectedJob.id, worker_id: assigningWorkerId })
+      });
+      if (res.ok) {
+        // Refresh jobs
+        const { data: orders } = await supabase.from('orders').select('*').order('created_at', { ascending: false });
+        if (orders) setAllJobs(orders);
+        setSelectedJob(null);
+        setAssigningWorkerId('');
+      } else {
+        alert('Failed to assign job');
+      }
+    } catch (error) {
+      console.error(error);
+    } finally {
+      setIsAssigning(false);
+    }
+  };
+
+  const handleUpdatePayout = async () => {
+    if (!selectedJob || !payoutAmount) return;
+    setIsUpdatingPayout(true);
+    try {
+      const res = await fetch('/api/admin/jobs/update-payout', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ job_id: selectedJob.id, payout_amount: payoutAmount })
+      });
+      if (res.ok) {
+        const { data: orders } = await supabase.from('orders').select('*').order('created_at', { ascending: false });
+        if (orders) setAllJobs(orders);
+        setSelectedJob({ ...selectedJob, payout_amount: parseFloat(payoutAmount) });
+        setSaveSuccess(true);
+        setTimeout(() => setSaveSuccess(false), 2000);
+      } else {
+        alert('Failed to update payout');
+      }
+    } catch (error) {
+      console.error(error);
+    } finally {
+      setIsUpdatingPayout(false);
+    }
+  };
+
+  const handleApproveJob = async () => {
+    if (!selectedJob) return;
+    setIsApproving(true);
+    try {
+      const res = await fetch('/api/admin/jobs/approve', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ job_id: selectedJob.id })
+      });
+      if (res.ok) {
+        setApproveSuccess(true);
+        setTimeout(async () => {
+          setApproveSuccess(false);
+          // Refresh jobs and workers
+          const { data: orders } = await supabase.from('orders').select('*').order('created_at', { ascending: false });
+          const { data: workersData } = await supabase.from('workers').select('*').order('created_at', { ascending: false });
+          if (orders) setAllJobs(orders);
+          if (workersData) setWorkers(workersData);
+          setSelectedJob({ ...selectedJob, status: 'Completed' });
+        }, 2000);
+      } else {
+        alert('Failed to approve job');
+      }
+    } catch (error) {
+      console.error(error);
+    } finally {
+      setIsApproving(false);
+    }
+  };
 
   const sidebarItems = [
     { name: 'Dashboard', icon: <LayoutDashboard size={20} /> },
@@ -192,26 +331,28 @@ export default function AdminDashboard() {
                     <th style={{ padding: '1.5rem', color: 'var(--text-muted)', fontWeight: 500 }}>Tier</th>
                     <th style={{ padding: '1.5rem', color: 'var(--text-muted)', fontWeight: 500 }}>Status</th>
                     <th style={{ padding: '1.5rem', color: 'var(--text-muted)', fontWeight: 500 }}>Assigned To</th>
-                    <th style={{ padding: '1.5rem', color: 'var(--text-muted)', fontWeight: 500 }}>Revenue</th>
+                    <th style={{ padding: '1.5rem', color: 'var(--text-muted)', fontWeight: 500 }}>Worker Payout</th>
                     <th style={{ padding: '1.5rem', textAlign: 'right' }}>Actions</th>
                   </tr>
                 </thead>
                 <tbody>
                   {allJobs.map((job) => (
                     <tr key={job.id} style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
-                      <td style={{ padding: '1.5rem', fontWeight: 600 }}>{job.id}<br/><span style={{ fontSize: '0.8rem', color: 'var(--text-muted)', fontWeight: 400 }}>{job.customer}</span></td>
-                      <td style={{ padding: '1.5rem' }}>{job.tier}</td>
+                      <td style={{ padding: '1.5rem', fontWeight: 600 }}>{job.id.substring(0,8)}...<br/><span style={{ fontSize: '0.8rem', color: 'var(--text-muted)', fontWeight: 400 }}>{job.client_email}</span></td>
+                      <td style={{ padding: '1.5rem', textTransform: 'capitalize' }}>{job.transcription_type || 'Unknown'}</td>
                       <td style={{ padding: '1.5rem' }}>
                         <span style={{ 
-                          padding: '0.4rem 0.8rem', borderRadius: '20px', fontSize: '0.85rem', fontWeight: 600,
-                          background: job.status === 'Completed' ? 'rgba(16, 185, 129, 0.1)' : job.status === 'Failed' ? 'rgba(239, 68, 68, 0.1)' : 'rgba(59, 152, 217, 0.1)',
-                          color: job.status === 'Completed' ? '#10b981' : job.status === 'Failed' ? '#ef4444' : 'var(--primary-color)'
+                          padding: '0.4rem 0.8rem', borderRadius: '20px', fontSize: '0.85rem', fontWeight: 600, textTransform: 'capitalize',
+                          background: job.status === 'Completed' ? 'rgba(16, 185, 129, 0.1)' : job.status === 'Failed' ? 'rgba(239, 68, 68, 0.1)' : job.status === 'In Review' ? 'rgba(59, 152, 217, 0.1)' : 'rgba(245, 158, 11, 0.1)',
+                          color: job.status === 'Completed' ? '#10b981' : job.status === 'Failed' ? '#ef4444' : job.status === 'In Review' ? 'var(--primary-color)' : '#f59e0b'
                         }}>{job.status}</span>
                       </td>
-                      <td style={{ padding: '1.5rem', color: job.worker === 'Unassigned' ? '#ef4444' : 'inherit' }}>{job.worker}</td>
-                      <td style={{ padding: '1.5rem', color: '#10b981', fontWeight: 600 }}>${job.revenue.toFixed(2)}</td>
+                      <td style={{ padding: '1.5rem', color: job.assigned_worker_id ? 'var(--text-main)' : '#ef4444' }}>
+                        {job.assigned_worker_id ? (workers.find(w => w.id === job.assigned_worker_id)?.name || 'Unknown Worker') : 'Unassigned'}
+                      </td>
+                      <td style={{ padding: '1.5rem', color: '#10b981', fontWeight: 600 }}>${parseFloat(job.payout_amount || 0).toFixed(2)}</td>
                       <td style={{ padding: '1.5rem', textAlign: 'right' }}>
-                        <button style={{ background: 'transparent', color: 'white', border: '1px solid var(--border-color)', padding: '0.5rem 1rem', borderRadius: '8px', cursor: 'pointer' }}>Manage</button>
+                        <button onClick={() => { setSelectedJob(job); setPayoutAmount(job.payout_amount?.toString() || ''); }} style={{ background: 'transparent', color: 'white', border: '1px solid var(--border-color)', padding: '0.5rem 1rem', borderRadius: '8px', cursor: 'pointer' }}>Manage</button>
                       </td>
                     </tr>
                   ))}
@@ -223,30 +364,28 @@ export default function AdminDashboard() {
 
         {activeTab === 'Workers' && (
           <div style={{ animation: 'fadeInUp 0.5s ease-out' }}>
-            <h2 style={{ fontSize: '1.5rem', marginBottom: '1.5rem' }}>Freelance Workforce</h2>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1.5rem' }}>
+              <h2 style={{ fontSize: '1.5rem' }}>Freelance Workforce</h2>
+              <button onClick={() => setIsAddingWorker(true)} style={{ background: 'var(--primary-color)', color: 'white', border: 'none', padding: '0.6rem 1.2rem', borderRadius: '8px', cursor: 'pointer', fontWeight: 600 }}>+ Add New Worker</button>
+            </div>
             <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '2rem' }}>
               {workers.map((w, i) => (
                 <div key={i} style={{ background: 'var(--surface-color)', padding: '2rem', borderRadius: '16px', border: '1px solid var(--border-color)', display: 'flex', flexDirection: 'column' }}>
                   <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '1.5rem' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-                      <div style={{ width: '50px', height: '50px', borderRadius: '50%', background: 'var(--primary-color)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.5rem', fontWeight: 'bold' }}>{w.name.charAt(0)}</div>
+                      <div style={{ width: '50px', height: '50px', borderRadius: '50%', background: 'var(--primary-color)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '1.5rem', fontWeight: 'bold' }}>{w.name ? w.name.charAt(0) : '?'}</div>
                       <div>
                         <h3 style={{ fontSize: '1.1rem' }}>{w.name}</h3>
                         <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)' }}>{w.email}</p>
                       </div>
                     </div>
-                    <span style={{ background: w.status === 'Online' ? 'rgba(16, 185, 129, 0.1)' : w.status === 'Offline' ? 'rgba(255,255,255,0.1)' : 'rgba(245, 158, 11, 0.1)', color: w.status === 'Online' ? '#10b981' : w.status === 'Offline' ? 'var(--text-muted)' : '#f59e0b', padding: '0.3rem 0.8rem', borderRadius: '20px', fontSize: '0.8rem', fontWeight: 'bold', height: 'fit-content' }}>{w.status}</span>
                   </div>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', borderTop: '1px solid var(--border-color)', paddingTop: '1.5rem', marginTop: 'auto' }}>
-                    <div>
-                      <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Rating</p>
-                      <p style={{ fontWeight: 'bold', color: '#fbbf24' }}>★ {w.rating}</p>
-                    </div>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', borderTop: '1px solid var(--border-color)', paddingTop: '1.5rem', marginTop: 'auto', alignItems: 'center' }}>
                     <div>
                       <p style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>Total Paid</p>
-                      <p style={{ fontWeight: 'bold', color: '#10b981' }}>{w.earnings}</p>
+                      <p style={{ fontWeight: 'bold', color: '#10b981' }}>${w.earnings || '0.00'}</p>
                     </div>
-                    <button style={{ background: 'transparent', color: 'white', border: '1px solid var(--border-color)', padding: '0.4rem 1rem', borderRadius: '8px', cursor: 'pointer' }}>Profile</button>
+                    <button onClick={() => handleRemoveWorker(w.id)} style={{ background: 'transparent', color: '#ef4444', border: '1px solid #ef4444', padding: '0.4rem 1rem', borderRadius: '8px', cursor: 'pointer', transition: 'all 0.2s ease' }} onMouseOver={(e) => { e.currentTarget.style.background = 'rgba(239, 68, 68, 0.1)'; }} onMouseOut={(e) => { e.currentTarget.style.background = 'transparent'; }}>Remove Worker</button>
                   </div>
                 </div>
               ))}
@@ -273,8 +412,8 @@ export default function AdminDashboard() {
                     <tr key={i} style={{ borderBottom: '1px solid rgba(255,255,255,0.05)' }}>
                       <td style={{ padding: '1.5rem', fontWeight: 600 }}>{c.name}</td>
                       <td style={{ padding: '1.5rem', color: 'var(--text-muted)' }}>{c.email}</td>
-                      <td style={{ padding: '1.5rem' }}><span style={{ background: c.activeJobs > 0 ? 'rgba(59, 152, 217, 0.1)' : 'rgba(255,255,255,0.05)', padding: '0.3rem 0.8rem', borderRadius: '20px', color: c.activeJobs > 0 ? 'var(--primary-color)' : 'var(--text-muted)' }}>{c.activeJobs} Jobs</span></td>
-                      <td style={{ padding: '1.5rem', color: '#10b981', fontWeight: 600 }}>{c.totalSpent}</td>
+                      <td style={{ padding: '1.5rem' }}><span style={{ background: 'rgba(255,255,255,0.05)', padding: '0.3rem 0.8rem', borderRadius: '20px', color: 'var(--text-muted)' }}>0 Jobs</span></td>
+                      <td style={{ padding: '1.5rem', color: '#10b981', fontWeight: 600 }}>--</td>
                       <td style={{ padding: '1.5rem', textAlign: 'right' }}>
                         <button style={{ background: 'transparent', color: 'white', border: '1px solid var(--border-color)', padding: '0.5rem 1rem', borderRadius: '8px', cursor: 'pointer' }}>View History</button>
                       </td>
@@ -365,6 +504,181 @@ export default function AdminDashboard() {
                 </div>
               </div>
               <button style={{ marginTop: '2rem', background: 'var(--primary-color)', color: 'white', border: 'none', padding: '0.8rem 1.5rem', borderRadius: '8px', cursor: 'pointer' }}>Update API Keys</button>
+            </div>
+          </div>
+        )}
+
+        {/* Job Details Modal */}
+        {selectedJob && (
+          <div style={{ position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', background: 'rgba(0,0,0,0.8)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999 }}>
+            <div style={{ background: 'var(--surface-color)', padding: '2.5rem', borderRadius: '24px', border: '1px solid var(--border-color)', width: '100%', maxWidth: '800px', maxHeight: '90vh', overflowY: 'auto', position: 'relative', animation: 'fadeInUp 0.3s ease-out' }}>
+              <button onClick={() => setSelectedJob(null)} style={{ position: 'absolute', top: '1.5rem', right: '1.5rem', background: 'transparent', border: 'none', color: 'var(--text-muted)', cursor: 'pointer' }}>
+                <X size={24} />
+              </button>
+              
+              <h2 style={{ fontSize: '1.8rem', marginBottom: '0.5rem' }}>Job Details: {selectedJob.id.substring(0,8)}</h2>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '1rem', marginBottom: '2rem' }}>
+                <span style={{ display: 'inline-block', padding: '0.4rem 0.8rem', borderRadius: '20px', fontSize: '0.85rem', fontWeight: 600, textTransform: 'capitalize', background: 'rgba(59, 152, 217, 0.1)', color: 'var(--primary-color)' }}>
+                  Status: {selectedJob.status}
+                </span>
+                {selectedJob.status === 'In Review' && (
+                  <button 
+                    onClick={handleApproveJob}
+                    disabled={isApproving || approveSuccess}
+                    style={{ padding: '0.4rem 1rem', background: approveSuccess ? 'transparent' : '#10b981', color: approveSuccess ? '#10b981' : 'white', border: approveSuccess ? '2px solid #10b981' : 'none', borderRadius: '20px', fontWeight: 'bold', cursor: 'pointer', opacity: (isApproving || approveSuccess) ? 0.7 : 1, display: 'flex', alignItems: 'center', gap: '0.5rem', animation: isApproving ? 'pulse 2s infinite' : 'none', transition: 'all 0.2s ease' }}
+                  >
+                    <CheckCircle size={16} /> {isApproving ? 'Approving...' : approveSuccess ? '✓ Approved & Paid!' : 'Approve & Pay Worker'}
+                  </button>
+                )}
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '2rem' }}>
+                
+                {/* Client Details */}
+                <div style={{ background: 'rgba(0,0,0,0.2)', padding: '1.5rem', borderRadius: '16px', border: '1px solid rgba(255,255,255,0.05)' }}>
+                  <h3 style={{ fontSize: '1.1rem', marginBottom: '1rem', color: 'var(--primary-color)' }}>Client Contact</h3>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.8rem' }}>
+                    <div><span style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>Name:</span> <br/> <strong>{selectedJob.client_name || 'N/A'}</strong></div>
+                    <div><span style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>Email:</span> <br/> <strong>{selectedJob.client_email}</strong></div>
+                    <div><span style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>Phone:</span> <br/> <strong>{selectedJob.client_phone || 'N/A'}</strong></div>
+                    <div><span style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>Preferred Method:</span> <br/> <strong style={{ textTransform: 'capitalize' }}>{selectedJob.contact_method || 'Email'}</strong></div>
+                  </div>
+                </div>
+
+                {/* Worker Payout Configuration */}
+                <div style={{ background: 'rgba(0,0,0,0.2)', padding: '1.5rem', borderRadius: '16px', border: '1px solid rgba(255,255,255,0.05)' }}>
+                  <h3 style={{ fontSize: '1.1rem', marginBottom: '1rem', color: '#10b981' }}>Set Worker Payout</h3>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                    <p style={{ fontSize: '0.85rem', color: 'var(--text-muted)', lineHeight: 1.5 }}>Enter the amount you want to pay a freelancer for completing this job. This will be shown on the Job Board.</p>
+                    <div style={{ display: 'flex', gap: '0.5rem' }}>
+                      <div style={{ position: 'relative', flex: 1 }}>
+                        <span style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }}>$</span>
+                        <input 
+                          type="number" 
+                          placeholder="0.00" 
+                          value={payoutAmount}
+                          onChange={(e) => setPayoutAmount(e.target.value)}
+                          style={{ width: '100%', padding: '0.8rem 1rem 0.8rem 2rem', background: 'var(--surface-color)', border: '1px solid var(--border-color)', borderRadius: '8px', color: 'white', fontSize: '1.1rem' }}
+                        />
+                      </div>
+                      <button 
+                        onClick={handleUpdatePayout}
+                        disabled={isUpdatingPayout || !payoutAmount}
+                        style={{ padding: '0 1.5rem', background: saveSuccess ? 'transparent' : '#10b981', color: saveSuccess ? '#10b981' : 'white', border: saveSuccess ? '2px solid #10b981' : 'none', borderRadius: '8px', fontWeight: 'bold', cursor: 'pointer', opacity: (isUpdatingPayout || !payoutAmount) ? 0.7 : 1, transition: 'all 0.2s ease' }}
+                      >
+                        {isUpdatingPayout ? 'Saving...' : saveSuccess ? '✓ Saved!' : 'Save'}
+                      </button>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Project Scope */}
+                <div style={{ gridColumn: '1 / -1', background: 'rgba(0,0,0,0.2)', padding: '1.5rem', borderRadius: '16px', border: '1px solid rgba(255,255,255,0.05)' }}>
+                  <h3 style={{ fontSize: '1.1rem', marginBottom: '1rem', color: 'var(--primary-color)' }}>Project Scope</h3>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '0.8rem' }}>
+                    <div><span style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>Transcription Tier:</span> <br/> <strong style={{ textTransform: 'capitalize' }}>{selectedJob.transcription_type || 'Unknown'}</strong></div>
+                    <div><span style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>Total Audio Length:</span> <br/> <strong>{selectedJob.audio_length_minutes ? `${selectedJob.audio_length_minutes} Minutes` : 'N/A'}</strong></div>
+                    <div><span style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>Number of Files:</span> <br/> <strong>{selectedJob.number_of_files || 1}</strong></div>
+                    <div><span style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>Turnaround Time:</span> <br/> <strong>{selectedJob.turnaround_time || 'Standard'}</strong></div>
+                  </div>
+                </div>
+
+                {/* Formatting Instructions */}
+                <div style={{ gridColumn: '1 / -1', background: 'rgba(0,0,0,0.2)', padding: '1.5rem', borderRadius: '16px', border: '1px solid rgba(255,255,255,0.05)' }}>
+                  <h3 style={{ fontSize: '1.1rem', marginBottom: '1rem', color: 'var(--primary-color)' }}>Instructions & Formatting</h3>
+                  <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem' }}>
+                    <div><span style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>Delivery Format:</span> <br/> <strong style={{ textTransform: 'uppercase' }}>{selectedJob.transcript_format || 'PDF'}</strong></div>
+                    <div><span style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>Delivery Method:</span> <br/> <strong style={{ textTransform: 'capitalize' }}>{selectedJob.delivery_method || 'Email'}</strong></div>
+                  </div>
+                  
+                  {selectedJob.special_instructions && (
+                    <div style={{ marginTop: '1.5rem', padding: '1rem', background: 'rgba(245, 158, 11, 0.1)', border: '1px solid rgba(245, 158, 11, 0.3)', borderRadius: '12px' }}>
+                      <span style={{ color: '#f59e0b', fontSize: '0.85rem', fontWeight: 'bold' }}>Special Instructions:</span>
+                      <p style={{ marginTop: '0.5rem', lineHeight: 1.5 }}>{selectedJob.special_instructions}</p>
+                    </div>
+                  )}
+
+                  {selectedJob.spellings && (
+                    <div style={{ marginTop: '1rem', padding: '1rem', background: 'rgba(255, 255, 255, 0.05)', borderRadius: '12px' }}>
+                      <span style={{ color: 'var(--text-muted)', fontSize: '0.85rem', fontWeight: 'bold' }}>Specific Spellings Provided:</span>
+                      <p style={{ marginTop: '0.5rem', lineHeight: 1.5 }}>{selectedJob.spellings}</p>
+                    </div>
+                  )}
+                </div>
+
+              </div>
+
+              {(selectedJob.status === 'Completed' || selectedJob.status === 'In Review') && selectedJob.delivery_url && (
+                <div style={{ marginTop: '2rem', background: 'rgba(16, 185, 129, 0.05)', padding: '1.5rem', borderRadius: '16px', border: '1px solid rgba(16, 185, 129, 0.2)' }}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '1rem' }}>
+                    <h3 style={{ fontSize: '1.2rem', color: '#10b981' }}>{selectedJob.status === 'In Review' ? 'Delivered Work (Needs Approval)' : 'Completed Delivery'}</h3>
+                  </div>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
+                    <div>
+                      <span style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>Final Transcript Link:</span> <br/>
+                      <a href={selectedJob.delivery_url?.startsWith('http') ? selectedJob.delivery_url : `https://${selectedJob.delivery_url}`} target="_blank" rel="noopener noreferrer" style={{ color: 'var(--primary-color)', textDecoration: 'underline', wordBreak: 'break-all' }}>{selectedJob.delivery_url}</a>
+                    </div>
+                    {selectedJob.delivery_notes && (
+                      <div>
+                        <span style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>Worker Notes:</span> <br/>
+                        <p style={{ marginTop: '0.5rem', lineHeight: 1.5, background: 'rgba(0,0,0,0.2)', padding: '1rem', borderRadius: '8px' }}>{selectedJob.delivery_notes}</p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+
+              <div style={{ marginTop: '2.5rem', display: 'flex', gap: '1rem', justifyContent: 'flex-end', alignItems: 'center' }}>
+                {selectedJob.status === 'pending' && (
+                  <>
+                    <select 
+                      value={assigningWorkerId} 
+                      onChange={(e) => setAssigningWorkerId(e.target.value)}
+                      style={{ background: 'rgba(0,0,0,0.2)', border: '1px solid var(--border-color)', color: 'white', padding: '0.8rem', borderRadius: '8px', minWidth: '200px' }}
+                    >
+                      <option value="">-- Select Worker --</option>
+                      {workers.map(w => <option key={w.id} value={w.id}>{w.name}</option>)}
+                    </select>
+                    <button 
+                      onClick={handleAssignJob}
+                      disabled={!assigningWorkerId || isAssigning}
+                      style={{ padding: '0.8rem 1.5rem', borderRadius: '8px', background: 'var(--primary-color)', border: 'none', color: 'white', cursor: 'pointer', fontWeight: 'bold', opacity: (!assigningWorkerId || isAssigning) ? 0.5 : 1 }}
+                    >
+                      {isAssigning ? 'Assigning...' : 'Assign Worker'}
+                    </button>
+                  </>
+                )}
+                <button onClick={() => setSelectedJob(null)} style={{ padding: '0.8rem 1.5rem', borderRadius: '8px', background: 'transparent', border: '1px solid var(--border-color)', color: 'white', cursor: 'pointer' }}>Close Window</button>
+              </div>
+
+            </div>
+          </div>
+        )}
+
+        {/* Add Worker Modal */}
+        {isAddingWorker && (
+          <div style={{ position: 'fixed', top: 0, left: 0, width: '100%', height: '100%', background: 'rgba(0,0,0,0.8)', backdropFilter: 'blur(4px)', display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999 }}>
+            <div style={{ background: 'var(--surface-color)', padding: '2.5rem', borderRadius: '24px', border: '1px solid var(--border-color)', width: '100%', maxWidth: '500px', position: 'relative', animation: 'fadeInUp 0.3s ease-out' }}>
+              <button onClick={() => setIsAddingWorker(false)} style={{ position: 'absolute', top: '1.5rem', right: '1.5rem', background: 'transparent', border: 'none', color: 'var(--text-muted)', cursor: 'pointer' }}>
+                <X size={24} />
+              </button>
+              
+              <h2 style={{ fontSize: '1.8rem', marginBottom: '0.5rem' }}>Add New Worker</h2>
+              <p style={{ color: 'var(--text-muted)', marginBottom: '2rem' }}>Invite a new freelance transcriptionist to the platform.</p>
+
+              <form onSubmit={handleAddWorker} style={{ display: 'flex', flexDirection: 'column', gap: '1.5rem' }}>
+                <div>
+                  <label style={{ display: 'block', marginBottom: '0.5rem', color: 'var(--text-muted)' }}>Full Name</label>
+                  <input type="text" value={newWorker.name} onChange={(e) => setNewWorker({...newWorker, name: e.target.value})} required style={{ width: '100%', padding: '1rem', background: 'rgba(0,0,0,0.2)', border: '1px solid var(--border-color)', borderRadius: '12px', color: 'white', fontSize: '1rem' }} />
+                </div>
+                <div>
+                  <label style={{ display: 'block', marginBottom: '0.5rem', color: 'var(--text-muted)' }}>Email Address</label>
+                  <input type="email" value={newWorker.email} onChange={(e) => setNewWorker({...newWorker, email: e.target.value})} required style={{ width: '100%', padding: '1rem', background: 'rgba(0,0,0,0.2)', border: '1px solid var(--border-color)', borderRadius: '12px', color: 'white', fontSize: '1rem' }} />
+                </div>
+                <button type="submit" disabled={isSubmittingWorker} style={{ marginTop: '1rem', background: 'var(--primary-color)', color: 'white', border: 'none', padding: '1rem', borderRadius: '12px', cursor: 'pointer', fontWeight: 'bold', fontSize: '1.1rem', opacity: isSubmittingWorker ? 0.7 : 1 }}>
+                  {isSubmittingWorker ? 'Adding...' : 'Send Invitation'}
+                </button>
+              </form>
             </div>
           </div>
         )}

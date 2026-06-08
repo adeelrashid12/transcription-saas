@@ -1,11 +1,20 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Menu, X } from "lucide-react";
+import { usePathname } from 'next/navigation';
 
 export default function Header() {
   const [isOpen, setIsOpen] = useState(false);
+  const [isLoggedIn, setIsLoggedIn] = useState(false);
+  const pathname = usePathname();
+
+  useEffect(() => {
+    // Check if worker is logged in
+    const worker = localStorage.getItem('worker');
+    setIsLoggedIn(!!worker);
+  }, [pathname]);
 
   return (
     <header className="header" style={{ position: 'relative' }}>
@@ -35,7 +44,24 @@ export default function Header() {
         <Link href="/" onClick={() => setIsOpen(false)}>Home</Link>
         <Link href="/services" onClick={() => setIsOpen(false)}>Services</Link>
         <Link href="/pricing" onClick={() => setIsOpen(false)}>Pricing</Link>
-        <Link href="/login" className="login-btn" onClick={() => setIsOpen(false)} style={{ whiteSpace: 'nowrap' }}>Log In</Link>
+        
+        {isLoggedIn ? (
+          <>
+            <Link href="/transcriptionist-dashboard" className="login-btn" onClick={() => setIsOpen(false)} style={{ whiteSpace: 'nowrap' }}>Dashboard</Link>
+            <button 
+              onClick={() => {
+                localStorage.removeItem('worker');
+                window.location.href = '/login';
+              }} 
+              className="login-btn" 
+              style={{ whiteSpace: 'nowrap', background: 'transparent', border: '1px solid #ef4444', color: '#ef4444', cursor: 'pointer', fontFamily: 'inherit', fontSize: 'inherit', marginLeft: '1.5rem' }}
+            >
+              Logout
+            </button>
+          </>
+        ) : (
+          <Link href="/login" className="login-btn" onClick={() => setIsOpen(false)} style={{ whiteSpace: 'nowrap' }}>Log In</Link>
+        )}
       </nav>
 
     </header>

@@ -1,18 +1,29 @@
 import { NextResponse } from 'next/server';
+import { supabase } from '@/lib/supabase';
 
 export async function POST(request: Request) {
   try {
     const data = await request.json();
 
-    // 1. Simulate saving the Lead to the Database
-    console.log("New Free Trial Account Created:", data.email);
-    console.log("Saving user contact info for future sales follow-up:", data);
-    // TODO: Integrate with Prisma/Supabase here
+    // 1. Save the Lead to the Supabase Database
+    const { error } = await supabase
+      .from('leads')
+      .insert([
+        {
+          name: data.name,
+          email: data.email,
+          phone: data.phone || null,
+        }
+      ]);
 
-    // 2. Simulate provisioning the 30 free minutes
-    console.log("Provisioned 30 free AI minutes for account:", data.email);
+    if (error) {
+      console.error("Supabase Error saving lead:", error);
+      throw error;
+    }
 
-    // 3. Return success
+    console.log("New Free Trial Account Saved in Supabase:", data.email);
+
+    // 2. Return success
     return NextResponse.json(
       { message: "Account created successfully. 30 free minutes provisioned." },
       { status: 200 }

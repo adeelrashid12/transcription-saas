@@ -26,7 +26,7 @@ export default function IntakeForm() {
     // Step 1
     name: '', date: '', email: '', phone: '', contactMethod: 'email', billingAddress: '',
     // Step 2
-    type: 'legal', length: '', files: '1', formats: '', turnaround: '',
+    tier: 'ai_only', type: 'legal', length: '', files: '1', formats: '', turnaround: '',
     // Step 3
     quality: '', speakers: '1', speakerNotes: '', missingPortions: '',
     // Step 4
@@ -152,7 +152,15 @@ export default function IntakeForm() {
               <h2 style={{ fontSize: '1.8rem', marginBottom: '2rem' }}>Project Details</h2>
               <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem', marginBottom: '1.5rem' }} className="mobile-col">
                 <div className="input-group">
-                  <label>Type of Transcription</label>
+                  <label>Transcription Tier</label>
+                  <select name="tier" value={formData.tier} onChange={handleChange}>
+                    <option value="free">Free Trial (First 30 Mins AI)</option>
+                    <option value="ai_only">AI Only Transcription ($0.18/min)</option>
+                    <option value="human">Fully Human Transcription ($3.50/min)</option>
+                  </select>
+                </div>
+                <div className="input-group">
+                  <label>Type of Audio</label>
                   <select name="type" value={formData.type} onChange={handleChange}>
                     <option value="legal">Legal Proceeding</option>
                     <option value="interview">Interview</option>
@@ -160,6 +168,8 @@ export default function IntakeForm() {
                     <option value="other">Other</option>
                   </select>
                 </div>
+              </div>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '1.5rem', marginBottom: '1.5rem' }} className="mobile-col">
                 <div className="input-group">
                   <label>Audio/Video Length (Approx)</label>
                   <input type="text" name="length" placeholder="e.g. 2 hours 15 mins" value={formData.length} onChange={handleChange} />

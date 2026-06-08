@@ -27,12 +27,33 @@ export default function Pricing() {
       {/* Pricing Cards */}
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '2rem', marginBottom: '6rem' }}>
         
-        {/* Tier 1 */}
+        {/* Tier 1 - Free */}
         <div style={{ background: 'var(--surface-color)', padding: '3rem 2rem', borderRadius: '24px', border: '1px solid var(--border-color)', display: 'flex', flexDirection: 'column' }}>
-          <h3 style={{ fontSize: '1.5rem', marginBottom: '0.5rem' }}>Automated AI</h3>
+          <h3 style={{ fontSize: '1.5rem', marginBottom: '0.5rem' }}>Free Tier</h3>
+          <p style={{ color: 'var(--text-muted)', marginBottom: '2rem' }}>Perfect for testing our accuracy.</p>
+          <div style={{ marginBottom: '2rem' }}>
+            <span style={{ fontSize: '3rem', fontWeight: 'bold' }}>$0</span>
+            <span style={{ color: 'var(--text-muted)' }}> / first 30 mins</span>
+          </div>
+          
+          <ul style={{ listStyle: 'none', padding: 0, display: 'flex', flexDirection: 'column', gap: '1rem', marginBottom: '3rem', flex: 1 }}>
+            <li style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}><Check size={20} color="#10b981" /> 30 Minutes Free</li>
+            <li style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}><Check size={20} color="#10b981" /> AI Transcription</li>
+            <li style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}><Check size={20} color="#10b981" /> Instant Delivery</li>
+            <li style={{ display: 'flex', alignItems: 'center', gap: '1rem', color: 'var(--text-muted)' }}><X size={20} /> Human Grammar Review</li>
+          </ul>
+
+          <Link href="/free-trial" style={{ width: '100%' }}>
+            <button style={{ width: '100%', padding: '1rem', background: 'transparent', border: '1px solid var(--border-color)', color: 'white', borderRadius: '12px', fontSize: '1rem', fontWeight: 600, cursor: 'pointer' }}>Start Free Trial</button>
+          </Link>
+        </div>
+
+        {/* Tier 2 - AI Only */}
+        <div style={{ background: 'var(--surface-color)', padding: '3rem 2rem', borderRadius: '24px', border: '1px solid var(--border-color)', display: 'flex', flexDirection: 'column' }}>
+          <h3 style={{ fontSize: '1.5rem', marginBottom: '0.5rem' }}>AI Only Tier</h3>
           <p style={{ color: 'var(--text-muted)', marginBottom: '2rem' }}>For clean audio and instant results.</p>
           <div style={{ marginBottom: '2rem' }}>
-            <span style={{ fontSize: '3rem', fontWeight: 'bold' }}>$0.15</span>
+            <span style={{ fontSize: '3rem', fontWeight: 'bold' }}>$0.18</span>
             <span style={{ color: 'var(--text-muted)' }}> / audio minute</span>
           </div>
           
@@ -41,56 +62,33 @@ export default function Pricing() {
             <li style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}><Check size={20} color="#10b981" /> Speaker Identification</li>
             <li style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}><Check size={20} color="#10b981" /> Basic Timestamps</li>
             <li style={{ display: 'flex', alignItems: 'center', gap: '1rem', color: 'var(--text-muted)' }}><X size={20} /> Human Grammar Review</li>
-            <li style={{ display: 'flex', alignItems: 'center', gap: '1rem', color: 'var(--text-muted)' }}><X size={20} /> Complex Background Noise</li>
           </ul>
 
-          <Link href="/" style={{ width: '100%' }}>
+          <Link href="/intake" style={{ width: '100%' }}>
             <button style={{ width: '100%', padding: '1rem', background: 'transparent', border: '1px solid var(--border-color)', color: 'white', borderRadius: '12px', fontSize: '1rem', fontWeight: 600, cursor: 'pointer' }}>Select AI Tier</button>
           </Link>
         </div>
 
-        {/* Tier 2 */}
+        {/* Tier 3 - Fully Human */}
         <div style={{ background: 'var(--surface-color)', padding: '3rem 2rem', borderRadius: '24px', border: '2px solid var(--primary-color)', position: 'relative', display: 'flex', flexDirection: 'column', transform: 'scale(1.05)', zIndex: 10, boxShadow: '0 20px 40px -10px rgba(59, 152, 217, 0.3)' }}>
           <div style={{ position: 'absolute', top: '-14px', left: '50%', transform: 'translateX(-50%)', background: 'var(--primary-color)', color: 'white', padding: '0.4rem 1.5rem', borderRadius: '20px', fontSize: '0.85rem', fontWeight: 'bold' }}>RECOMMENDED</div>
-          <h3 style={{ fontSize: '1.5rem', marginBottom: '0.5rem' }}>Human Reviewed</h3>
-          <p style={{ color: 'var(--text-muted)', marginBottom: '2rem' }}>AI generated, polished by human experts.</p>
-          <div style={{ marginBottom: '2rem' }}>
-            <span style={{ fontSize: '3rem', fontWeight: 'bold' }}>$2.50</span>
-            <span style={{ color: 'var(--text-muted)' }}> / audio minute</span>
-          </div>
-          
-          <ul style={{ listStyle: 'none', padding: 0, display: 'flex', flexDirection: 'column', gap: '1rem', marginBottom: '3rem', flex: 1 }}>
-            <li style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}><Check size={20} color="#10b981" /> Two-Week Delivery (Expedited available)</li>
-            <li style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}><Check size={20} color="#10b981" /> 99% Verified Accuracy</li>
-            <li style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}><Check size={20} color="#10b981" /> Perfect Grammar & Punctuation</li>
-            <li style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}><Check size={20} color="#10b981" /> Formatted for Reading</li>
-            <li style={{ display: 'flex', alignItems: 'center', gap: '1rem', color: 'var(--text-muted)' }}><X size={20} /> Heavy Accent Handling</li>
-          </ul>
-
-          <Link href="/" style={{ width: '100%' }}>
-            <button style={{ width: '100%', padding: '1rem', background: 'var(--primary-color)', border: 'none', color: 'white', borderRadius: '12px', fontSize: '1rem', fontWeight: 600, cursor: 'pointer' }}>Select Reviewed Tier</button>
-          </Link>
-        </div>
-
-        {/* Tier 3 */}
-        <div style={{ background: 'var(--surface-color)', padding: '3rem 2rem', borderRadius: '24px', border: '1px solid var(--border-color)', display: 'flex', flexDirection: 'column' }}>
-          <h3 style={{ fontSize: '1.5rem', marginBottom: '0.5rem' }}>Fully Human</h3>
+          <h3 style={{ fontSize: '1.5rem', marginBottom: '0.5rem' }}>Fully Human Tier</h3>
           <p style={{ color: 'var(--text-muted)', marginBottom: '2rem' }}>For difficult audio and strict compliance.</p>
           <div style={{ marginBottom: '2rem' }}>
-            <span style={{ fontSize: '3rem', fontWeight: 'bold' }}>$4.00</span>
+            <span style={{ fontSize: '3rem', fontWeight: 'bold' }}>$3.50</span>
             <span style={{ color: 'var(--text-muted)' }}> / audio minute</span>
           </div>
           
           <ul style={{ listStyle: 'none', padding: 0, display: 'flex', flexDirection: 'column', gap: '1rem', marginBottom: '3rem', flex: 1 }}>
-            <li style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}><Check size={20} color="#10b981" /> Three-Week Delivery (Expedited available)</li>
+            <li style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}><Check size={20} color="#10b981" /> Standard Delivery</li>
             <li style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}><Check size={20} color="#10b981" /> Courtroom Certified Quality</li>
             <li style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}><Check size={20} color="#10b981" /> Handles Heavy Accents</li>
-            <li style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}><Check size={20} color="#10b981" /> Handles Heavy Background Noise</li>
+            <li style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}><Check size={20} color="#10b981" /> Perfect Grammar & Punctuation</li>
             <li style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}><Check size={20} color="#10b981" /> Strict Legal Formatting</li>
           </ul>
 
-          <Link href="/" style={{ width: '100%' }}>
-            <button style={{ width: '100%', padding: '1rem', background: 'transparent', border: '1px solid var(--border-color)', color: 'white', borderRadius: '12px', fontSize: '1rem', fontWeight: 600, cursor: 'pointer' }}>Select Human Tier</button>
+          <Link href="/intake" style={{ width: '100%' }}>
+            <button style={{ width: '100%', padding: '1rem', background: 'var(--primary-color)', border: 'none', color: 'white', borderRadius: '12px', fontSize: '1rem', fontWeight: 600, cursor: 'pointer' }}>Select Human Tier</button>
           </Link>
         </div>
 
